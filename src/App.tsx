@@ -59,7 +59,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--anchor-bg)] text-[var(--anchor-text)] relative overflow-x-hidden selection:bg-[var(--anchor-primary)] selection:text-white">
+    <div className="min-h-[100dvh] bg-[var(--anchor-bg)] text-[var(--anchor-text)] relative overflow-x-hidden selection:bg-[var(--anchor-primary)] selection:text-white">
       {/* Background Ambience - "Sanctuary" Feel */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         {/* Main Primary Blob */}
@@ -75,7 +75,7 @@ function App() {
         <div className="absolute inset-0 opacity-[0.015] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
       </div>
 
-      <main className="relative z-10 max-w-5xl mx-auto p-6 md:p-12 lg:p-20 animate-enter min-h-screen flex flex-col">
+      <main className="relative z-10 max-w-5xl mx-auto p-6 md:p-12 lg:p-20 animate-enter min-h-[100dvh] flex flex-col">
         {currentView === 'dashboard' && (
           <Dashboard
             onNavigate={handleNavigate}
