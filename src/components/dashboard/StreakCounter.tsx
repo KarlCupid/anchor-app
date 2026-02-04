@@ -10,12 +10,17 @@ export const StreakCounter = () => {
 
     useEffect(() => {
         const loadStreak = async () => {
-            const streak = await getStreak();
-            if (streak) {
-                setCurrentStreak(streak.currentStreak);
-                setLongestStreak(streak.longestStreak);
+            try {
+                const streak = await getStreak();
+                if (streak) {
+                    setCurrentStreak(streak.currentStreak);
+                    setLongestStreak(streak.longestStreak);
+                }
+            } catch (error) {
+                console.error('Failed to load streak:', error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         loadStreak();
@@ -30,47 +35,49 @@ export const StreakCounter = () => {
         );
     }
 
+
     return (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-4 h-full">
             {/* Current Streak */}
-            <Card variant="flat" className="relative overflow-hidden border border-[var(--anchor-primary)]/10">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Flame size={80} className="text-[var(--anchor-primary)] rotate-12" />
+            <Card hoverable className="relative overflow-hidden border-none bg-gradient-to-br from-orange-50 to-amber-50 shadow-sm group h-full flex flex-col justify-center">
+                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                    <Flame size={100} className="text-orange-500 rotate-12" />
                 </div>
 
-                <div className="relative z-10 flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-[var(--anchor-primary)]">
-                        <Flame size={20} className="fill-current" />
-                        <span className="text-sm font-medium uppercase tracking-wider">Current</span>
+                <div className="relative z-10 flex flex-col items-center text-center py-2">
+                    <div className="flex items-center gap-1.5 text-orange-600 mb-2">
+                        <Flame size={16} className="fill-orange-600" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Current</span>
                     </div>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-display font-bold text-[var(--anchor-text)]">
+                    <div className="flex items-baseline justify-center gap-1.5">
+                        <span className="text-4xl md:text-5xl font-display font-bold text-orange-900 group-hover:scale-110 transition-transform duration-300">
                             {currentStreak}
                         </span>
-                        <span className="text-sm text-[var(--anchor-text-muted)] font-medium">days</span>
                     </div>
+                    <span className="text-[10px] font-medium text-orange-700/60 uppercase tracking-widest mt-1">Days Fire</span>
                 </div>
             </Card>
 
             {/* Longest Streak */}
-            <Card variant="flat" className="relative overflow-hidden border border-[var(--anchor-secondary)]/10">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Trophy size={80} className="text-[var(--anchor-secondary)] -rotate-12" />
+            <Card hoverable className="relative overflow-hidden border-none bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm group h-full flex flex-col justify-center">
+                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                    <Trophy size={100} className="text-blue-500 -rotate-12" />
                 </div>
 
-                <div className="relative z-10 flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-[var(--anchor-secondary)]">
-                        <Trophy size={20} className="fill-current" />
-                        <span className="text-sm font-medium uppercase tracking-wider">Best</span>
+                <div className="relative z-10 flex flex-col items-center text-center py-2">
+                    <div className="flex items-center gap-1.5 text-blue-600 mb-2">
+                        <Trophy size={16} className="fill-blue-600" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Best</span>
                     </div>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-display font-bold text-[var(--anchor-text)]">
+                    <div className="flex items-baseline justify-center gap-1.5">
+                        <span className="text-4xl md:text-5xl font-display font-bold text-blue-900 group-hover:scale-110 transition-transform duration-300">
                             {longestStreak}
                         </span>
-                        <span className="text-sm text-[var(--anchor-text-muted)] font-medium">days</span>
                     </div>
+                    <span className="text-[10px] font-medium text-blue-700/60 uppercase tracking-widest mt-1">Record</span>
                 </div>
             </Card>
         </div>
     );
 };
+

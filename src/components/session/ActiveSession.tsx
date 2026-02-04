@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMachine } from '@xstate/react';
 import { ArrowLeft, Activity, Wind, Eye, MessageSquare } from 'lucide-react';
 import { sessionMachine } from '../../machines/sessionMachine';
@@ -12,9 +12,10 @@ import { Slider } from '../ui/Slider';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import type { Exposure } from '../../db';
-import { createSession, updateExposure, incrementStreak } from '../../db';
+import { createSession, updateExposure, incrementStreak, createOutcomeCheckIn } from '../../db';
 import { getRandomValidation } from '../../utils/grounding';
 import { useHaptic } from '../../hooks/useHaptic';
+import { scheduleOutcomeCheckIn } from '../../utils/notifications';
 
 interface ActiveSessionProps {
     exposure: Exposure;
@@ -51,22 +52,29 @@ export const ActiveSession = ({ exposure, onComplete, onCancel }: ActiveSessionP
     const [audioMemo, setAudioMemo] = useState<string | undefined>(undefined);
     const [lastMilestone, setLastMilestone] = useState(0);
 
+    // Keep track of state for interval closures
+    const stateRef = useRef(state);
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
+
     // Timer effect
     useEffect(() => {
         if (!isTimerRunning || !state.matches('delay')) return;
 
         const interval = setInterval(() => {
+            const currentState = stateRef.current;
             send({ type: 'TIMER_TICK' });
 
             // Check for 2-minute milestones
-            const currentMinutes = Math.floor(state.context.elapsedTime / 120);
+            const currentMinutes = Math.floor(currentState.context.elapsedTime / 120);
             if (currentMinutes > lastMilestone) {
                 setLastMilestone(currentMinutes);
                 haptic.milestone();
             }
 
             // Check if timer is complete
-            if (state.context.elapsedTime >= state.context.timerDuration) {
+            if (currentState.context.elapsedTime >= currentState.context.timerDuration) {
                 send({ type: 'TIMER_COMPLETE' });
                 setIsTimerRunning(false);
                 haptic.success();
@@ -74,7 +82,7 @@ export const ActiveSession = ({ exposure, onComplete, onCancel }: ActiveSessionP
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isTimerRunning, state.value, state.context.elapsedTime, state.context.timerDuration, send, haptic, lastMilestone]);
+    }, [isTimerRunning, state.value, send, haptic, lastMilestone]);
 
     // Grounding prompts every 2 minutes (for validation mode)
     useEffect(() => {
@@ -119,7 +127,7 @@ export const ActiveSession = ({ exposure, onComplete, onCancel }: ActiveSessionP
 
         // Save session to database
         const outcome = state.context.elapsedTime >= state.context.timerDuration ? 'completed' : 'partial';
-        await createSession({
+        const sessionId = await createSession({
             exposureId: exposure.id!,
             startedAt: new Date(state.context.startTime!),
             completedAt: new Date(),
@@ -131,6 +139,24 @@ export const ActiveSession = ({ exposure, onComplete, onCancel }: ActiveSessionP
             audioBlob: audioMemo,
             outcome
         });
+
+        // Schedule outcome check-in if there's a feared outcome
+        if (exposure.fearedOutcome && exposure.fearedProbability !== undefined) {
+            const scheduledAt = new Date();
+            scheduledAt.setHours(scheduledAt.getHours() + 48); // 48 hours from now
+
+            await createOutcomeCheckIn({
+                sessionId,
+                exposureId: exposure.id!,
+                fearedOutcome: exposure.fearedOutcome,
+                predictedProbability: exposure.fearedProbability,
+                scheduledAt,
+                outcomeOccurred: null
+            });
+
+            // Schedule the notification
+            await scheduleOutcomeCheckIn(sessionId, exposure.fearedOutcome, scheduledAt);
+        }
 
         // Update exposure
         await updateExposure(exposure.id!, {
@@ -148,7 +174,7 @@ export const ActiveSession = ({ exposure, onComplete, onCancel }: ActiveSessionP
         send({ type: 'SKIP_REFLECTION' });
 
         // Save session without reflection
-        await createSession({
+        const sessionId = await createSession({
             exposureId: exposure.id!,
             startedAt: new Date(state.context.startTime!),
             completedAt: new Date(),
@@ -159,6 +185,24 @@ export const ActiveSession = ({ exposure, onComplete, onCancel }: ActiveSessionP
             audioBlob: audioMemo,
             outcome: 'partial'
         });
+
+        // Schedule outcome check-in if there's a feared outcome
+        if (exposure.fearedOutcome && exposure.fearedProbability !== undefined) {
+            const scheduledAt = new Date();
+            scheduledAt.setHours(scheduledAt.getHours() + 48); // 48 hours from now
+
+            await createOutcomeCheckIn({
+                sessionId,
+                exposureId: exposure.id!,
+                fearedOutcome: exposure.fearedOutcome,
+                predictedProbability: exposure.fearedProbability,
+                scheduledAt,
+                outcomeOccurred: null
+            });
+
+            // Schedule the notification
+            await scheduleOutcomeCheckIn(sessionId, exposure.fearedOutcome, scheduledAt);
+        }
 
         await updateExposure(exposure.id!, {
             completedCount: exposure.completedCount + 1

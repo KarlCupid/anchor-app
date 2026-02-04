@@ -32,7 +32,7 @@ export const SUDSTrendChart = ({ sessions, exposures }: SUDSTrendChartProps) => 
 
         // Convert to array format for Recharts
         return Array.from(sessionsByDate.entries()).map(([date, exposureData]) => {
-            const dataPoint: any = { date };
+            const dataPoint: Record<string, string | number> = { date };
             exposureData.forEach((suds, exposureId) => {
                 dataPoint[exposureId] = suds;
             });

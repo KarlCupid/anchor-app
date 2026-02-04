@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 
 // Minimal test to see if React renders at all
-function TestApp() {
+export function TestApp() {
     return (
         <div style={{ padding: '2rem', fontFamily: 'system-ui' }}>
             <h1 style={{ color: '#5b7fa3' }}>Anchor - Test Mode</h1>

@@ -21,18 +21,18 @@ export const AnalyticsDashboard = ({ onBack }: AnalyticsDashboardProps) => {
     const [activeTab, setActiveTab] = useState<Tab>('trends');
 
     useEffect(() => {
+        const loadData = async () => {
+            const [sessionsData, exposuresData] = await Promise.all([
+                getAllSessions(),
+                getExposures(),
+            ]);
+            setSessions(sessionsData);
+            setExposures(exposuresData);
+            setLoading(false);
+        };
+
         loadData();
     }, []);
-
-    const loadData = async () => {
-        const [sessionsData, exposuresData] = await Promise.all([
-            getAllSessions(),
-            getExposures(),
-        ]);
-        setSessions(sessionsData);
-        setExposures(exposuresData);
-        setLoading(false);
-    };
 
     // Duration distribution data
     const durationData = sessions
@@ -115,8 +115,8 @@ export const AnalyticsDashboard = ({ onBack }: AnalyticsDashboardProps) => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors whitespace-nowrap ${activeTab === tab.id
-                                        ? 'bg-blue-100 border-blue-500 text-blue-700'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                    ? 'bg-blue-100 border-blue-500 text-blue-700'
+                                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                                     }`}
                             >
                                 <Icon size={18} />

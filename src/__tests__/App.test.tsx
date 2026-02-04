@@ -1,15 +1,24 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
 import * as db from '../db';
+import * as authContext from '../context/AuthContext';
+// import { User } from 'firebase/auth'; // Not needed if casting
 
 // Mock the database module
 vi.mock('../db', async () => {
     return {
         getOnboardingStatus: vi.fn(),
-        // Add other exports if needed, but for App.tsx this is the main side effect
+        getPendingCheckIns: vi.fn().mockResolvedValue([]),
+        getExposure: vi.fn() // Add getExposure mock
     };
 });
+
+// Mock the AuthContext
+vi.mock('../context/AuthContext', () => ({
+    useAuth: vi.fn(),
+}));
 
 // Mock child components to isolate App testing
 vi.mock('../components/dashboard/Dashboard', () => ({
@@ -30,47 +39,93 @@ vi.mock('../components/analytics/AnalyticsDashboard', () => ({
 vi.mock('../components/onboarding/Onboarding', () => ({
     Onboarding: () => <div data-testid="onboarding">Onboarding Component</div>
 }));
+vi.mock('../components/auth/AuthScreen', () => ({
+    AuthScreen: () => <div data-testid="auth-screen">AuthScreen</div>
+}));
+vi.mock('../components/landing/LandingPage', () => ({
+    LandingPage: () => <div data-testid="landing-page">LandingPage</div>
+}));
 
 describe('App Component', () => {
-    it('renders loading state initially', () => {
-        // Mock getOnboardingStatus to returning a promise that hasn't resolved yet
-        // or just rely on the initial render cycle (useEffect hasn't finished)
-        // However, to be safe, we can mock it to resolve slowly or check immediately after render
-        (db.getOnboardingStatus as any).mockReturnValue(new Promise(() => { }));
+    beforeEach(() => {
+        vi.resetAllMocks();
+        // Default to logged in user for these tests
+        vi.mocked(authContext.useAuth).mockReturnValue({
+            user: { uid: 'test-user', displayName: 'Test User' } as unknown as import('firebase/auth').User,
+            loading: false,
+            signIn: vi.fn(),
+            signUp: vi.fn(),
+            signOut: vi.fn()
+        });
+        vi.mocked(db.getPendingCheckIns).mockResolvedValue([]);
+    });
 
-        render(<App />);
+    it('renders loading state initially', () => {
+        vi.mocked(db.getOnboardingStatus).mockReturnValue(new Promise(() => { }));
+
+        render(
+            <MemoryRouter>
+                <App />
+            </MemoryRouter>
+        );
         expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
     it('renders dashboard when onboarding is complete', async () => {
-        (db.getOnboardingStatus as any).mockResolvedValue(true);
+        vi.mocked(db.getOnboardingStatus).mockResolvedValue(true);
 
-        render(<App />);
+        render(
+            <MemoryRouter initialEntries={['/dashboard']}>
+                <App />
+            </MemoryRouter>
+        );
 
         await waitFor(() => {
             expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
         });
 
+        // Should render dashboard route
         expect(screen.getByTestId('dashboard')).toBeInTheDocument();
         expect(screen.queryByTestId('onboarding')).not.toBeInTheDocument();
     });
 
     it('renders onboarding when onboarding is NOT complete', async () => {
-        (db.getOnboardingStatus as any).mockResolvedValue(false);
+        vi.mocked(db.getOnboardingStatus).mockResolvedValue(false);
 
-        render(<App />);
+        render(
+            <MemoryRouter initialEntries={['/dashboard']}>
+                <App />
+            </MemoryRouter>
+        );
 
         await waitFor(() => {
             expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
         });
 
-        // App renders Dashboard AND Onboarding overlay when onboarding is active? 
-        // Looking at App.tsx: 
-        // {currentView === 'dashboard' && <Dashboard ... />}
-        // {showOnboarding && <Onboarding ... />}
-        // So both should be present using default logic
-
         expect(screen.getByTestId('dashboard')).toBeInTheDocument();
         expect(screen.getByTestId('onboarding')).toBeInTheDocument();
+    });
+
+    it('renders landing page when user is not logged in', async () => {
+        vi.mocked(authContext.useAuth).mockReturnValue({
+            user: null,
+            loading: false,
+            signIn: vi.fn(),
+            signUp: vi.fn(),
+            signOut: vi.fn()
+        });
+        vi.mocked(db.getOnboardingStatus).mockResolvedValue(true);
+
+        render(
+            <MemoryRouter initialEntries={['/']}>
+                <App />
+            </MemoryRouter>
+        );
+
+        await waitFor(() => {
+            expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+        });
+
+        expect(screen.getByTestId('landing-page')).toBeInTheDocument();
     });
 });

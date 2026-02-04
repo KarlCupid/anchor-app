@@ -6,6 +6,10 @@ export interface GroundingExercise {
     duration: number; // in seconds
     instructions: string[];
     type: 'breathing' | 'sensory' | 'cognitive' | 'physical';
+    config?: {
+        phases?: number[]; // [inhale, hold, exhale, hold-empty]
+        steps?: { count: number; label: string; verb: string }[]; // For sensory: "5 things you see"
+    };
 }
 
 export const groundingExercises: GroundingExercise[] = [
@@ -20,7 +24,16 @@ export const groundingExercises: GroundingExercise[] = [
             'Name 3 things you can hear',
             'Name 2 things you can smell',
             'Name 1 thing you can taste'
-        ]
+        ],
+        config: {
+            steps: [
+                { count: 5, label: 'things you see', verb: 'find' },
+                { count: 4, label: 'things you can touch', verb: 'touch' },
+                { count: 3, label: 'things you hear', verb: 'hear' },
+                { count: 2, label: 'things you can smell', verb: 'smell' },
+                { count: 1, label: 'thing you can taste', verb: 'taste' }
+            ]
+        }
     },
     {
         id: 'box-breathing',
@@ -33,7 +46,25 @@ export const groundingExercises: GroundingExercise[] = [
             'Breathe out slowly for 4 counts',
             'Hold empty for 4 counts',
             'Repeat 4 times'
-        ]
+        ],
+        config: {
+            phases: [4, 4, 4, 4] // Inhale, Hold, Exhale, Hold
+        }
+    },
+    {
+        id: '4-7-8-breathing',
+        name: '4-7-8 Calming Breath',
+        duration: 120,
+        type: 'breathing',
+        instructions: [
+            'Breathe in through your nose for 4 counts',
+            'Hold your breath for 7 counts',
+            'Exhale completely through your mouth for 8 counts',
+            'Repeat 4 times'
+        ],
+        config: {
+            phases: [4, 7, 8, 0] // Inhale, Hold, Exhale, No 'Hold Empty'
+        }
     },
     {
         id: 'body-scan',
@@ -60,18 +91,6 @@ export const groundingExercises: GroundingExercise[] = [
             'Thoughts are like clouds - they pass',
             'You don\'t have to believe every thought',
             'Return your attention to the present moment'
-        ]
-    },
-    {
-        id: '4-7-8-breathing',
-        name: '4-7-8 Calming Breath',
-        duration: 120,
-        type: 'breathing',
-        instructions: [
-            'Breathe in through your nose for 4 counts',
-            'Hold your breath for 7 counts',
-            'Exhale completely through your mouth for 8 counts',
-            'Repeat 4 times'
         ]
     },
     {
